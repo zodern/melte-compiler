@@ -360,11 +360,11 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       return;
     }
 
-    if (typeof this.beforeCompile === 'function') {
-      code = await this.beforeCompile(code, file);
-
-      if (code instanceof Error) {
-        file.error(code);
+    if (typeof this.preprocess === 'function') {
+      try {
+        code = await this.preprocess(code, file);
+      } catch (e) {
+        file.error(e);
         return;
       }
     }
