@@ -6,9 +6,6 @@ Package.describe({
   documentation: 'README.md'
 });
 
-const ecmascriptVersion = '0.12.7';
-const cachingCompilerVersion = '1.2.1';
-
 Npm.depends({
   'svelte-hmr': '0.13.2',
   'find-up': '3.0.0',
