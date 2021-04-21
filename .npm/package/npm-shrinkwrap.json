@@ -1,6 +1,11 @@
 {
   "lockfileVersion": 1,
   "dependencies": {
+    "@babel/parser": {
+      "version": "7.4.3",
+      "resolved": "https://registry.npmjs.org/@babel/parser/-/parser-7.4.3.tgz",
+      "integrity": "sha512-gxpEUhTS1sGA63EGQGuA+WESPR/6tz6ng7tSHFCmaTJK/cGK8y37cBTspX+U2xCAue2IQVvF6Z0oigmjwD8YGQ=="
+    },
     "@types/estree": {
       "version": "0.0.47",
       "resolved": "https://registry.npmjs.org/@types/estree/-/estree-0.0.47.tgz",

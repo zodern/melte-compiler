@@ -1,3 +1,7 @@
+## 1.0.2 - April 21, 2021
+
+- Add missing `@babel/parser` dependency
+
 ## 1.0.1 - April 21, 2021
 
 - Fix error when package.json does not have `svelte:compiler` options
