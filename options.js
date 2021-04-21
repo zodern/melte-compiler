@@ -12,7 +12,7 @@ if (pkgPath) {
 
   // Don't allow overriding the runtime package from the package.json
   // If it should be changed, the build plugin will configure it
-  if (options.runtimePackage) {
+  if (options && options.runtimePackage) {
     delete options.runtimePackage;
   }
 } else {
