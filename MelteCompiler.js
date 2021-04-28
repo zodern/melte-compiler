@@ -88,7 +88,12 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
 
   getTs() {
     if (this.ts === null) {
-      this.ts = require('svelte-preprocess/dist/transformers/typescript').transformer;
+      try {
+        this.ts = require('svelte-preprocess/dist/transformers/typescript').transformer;
+      } catch (e) {
+        console.log('Melte: Unable to load svelte-preprocess. Please make sure the svelte-preprocess and typescript npm packages are installed.');
+        throw new Error('Unable to load dependencies to compile typescript');
+      }
     }
 
     return this.ts;

@@ -15,7 +15,6 @@ Npm.depends({
   'recast': '0.19.0',
   'periscopic': '2.0.2',
   'acorn': '7.4.0',
-  'svelte-preprocess': '4.7.0',
   '@babel/parser': '7.4.3'
 });
 
