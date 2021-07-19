@@ -141,7 +141,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
   // The compile result returned from `compileOneFile` can be an array or an
   // object. If the processed HTML file is not a Svelte component, the result is
   // an array of HTML sections (head and/or body). Otherwise, it's an object
-  // with JavaScript from a compiled Svelte cmponent.
+  // with JavaScript from a compiled Svelte component.
   compileResultSize(result) {
     let size = 0;
 
@@ -149,7 +149,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       result.forEach(section => size += section.data.length);
     } else {
       const { js, css } = result;
-      
+
       if (js && js.data) {
         size += js.data.length + js.sourceMap.toString().length;
       }
@@ -208,7 +208,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
         if (css) {
           file.addStylesheet(css);
         }
-        
+
         return js;
       });
     }
@@ -217,7 +217,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
   async compileOneFile(file) {
     // Search for head and body tags if lazy compilation isn't supported.
     // Otherwise, the file has already been parsed in `compileOneFileLater`.
-  
+
     if (!file.supportsLazyCompilation) {
       const sections = this.getHtmlSections(file);
 
