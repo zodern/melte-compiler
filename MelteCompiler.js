@@ -141,14 +141,22 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
   // The compile result returned from `compileOneFile` can be an array or an
   // object. If the processed HTML file is not a Svelte component, the result is
   // an array of HTML sections (head and/or body). Otherwise, it's an object
-  // with JavaScript from a compiled Svelte component.
+  // with JavaScript from a compiled Svelte cmponent.
   compileResultSize(result) {
     let size = 0;
 
     if (Array.isArray(result)) {
       result.forEach(section => size += section.data.length);
     } else {
-      size = result.data.length + result.sourceMap.toString().length;
+      const { js, css } = result;
+      
+      if (js && js.data) {
+        size += js.data.length + js.sourceMap.toString().length;
+      }
+
+      if (css && css.data) {
+        size += css.data.length + css.sourceMap.toString().length;
+      }
     }
 
     return size;
@@ -195,7 +203,13 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       file.addJavaScript({
         path: file.getPathInPackage()
       }, async () => {
-        return await getResult();
+        const { js, css } = await getResult();
+
+        if (css) {
+          file.addStylesheet(css);
+        }
+        
+        return js;
       });
     }
   }
@@ -203,6 +217,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
   async compileOneFile(file) {
     // Search for head and body tags if lazy compilation isn't supported.
     // Otherwise, the file has already been parsed in `compileOneFileLater`.
+  
     if (!file.supportsLazyCompilation) {
       const sections = this.getHtmlSections(file);
 
@@ -344,12 +359,10 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
             : { code: processedCode };
         },
         style: async ({ content, attributes }) => {
-          if (this.postcss) {
-            if (attributes.lang == 'postcss') {
-              return {
-                code: await this.postcss.process(content, { from: undefined })
-              };
-            }
+          if (this.postcss && (!attributes.lang || attributes.lang === 'postcss')) {
+            return {
+              code: await this.postcss.process(content, { from: undefined })
+            };
           }
         }
       })));
@@ -377,7 +390,6 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     let compiledResult;
     try {
       compiledResult = this.svelte.compile(code, svelteOptions);
-
       if (map) {
         compiledResult.js.map = this.combineSourceMaps(map, compiledResult.js.map);
       }
@@ -403,12 +415,29 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       );
     }
 
+    let css;
+
+    if (svelteOptions.css === false && compiledResult.css) {
+      css = {
+        path: file.getPathInPackage(),
+        sourcePath: file.getPathInPackage(),
+        data: compiledResult.css.code,
+        sourceMap: compiledResult.css.map,
+        lazy: false
+      };
+    }
+
     try {
-      return this.transpileWithBabel(
+      const js = this.transpileWithBabel(
         compiledResult.js,
         path,
         file
       );
+
+      return {
+        js,
+        css
+      }
     } catch (e) {
       // Throw unknown errors.
       if (!e.start) {
