@@ -344,12 +344,10 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
             : { code: processedCode };
         },
         style: async ({ content, attributes }) => {
-          if (this.postcss) {
-            if (attributes.lang == 'postcss') {
-              return {
-                code: await this.postcss.process(content, { from: undefined })
-              };
-            }
+          if (this.postcss && (!attributes.lang || attributes.lang === 'postcss')) {
+            return {
+              code: await this.postcss.process(content, { from: undefined })
+            };
           }
         }
       })));
