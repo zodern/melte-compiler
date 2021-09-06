@@ -148,7 +148,15 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     if (Array.isArray(result)) {
       result.forEach(section => size += section.data.length);
     } else {
-      size = result.data.length + result.sourceMap.toString().length;
+      const { js, css } = result;
+
+      if (js && js.data) {
+        size += js.data.length + js.sourceMap.toString().length;
+      }
+
+      if (css && css.data) {
+        size += css.data.length + css.sourceMap.toString().length;
+      }
     }
 
     return size;
@@ -195,7 +203,13 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       file.addJavaScript({
         path: file.getPathInPackage()
       }, async () => {
-        return await getResult();
+        const { js, css } = await getResult();
+
+        if (css) {
+          file.addStylesheet(css);
+        }
+
+        return js;
       });
     }
   }
@@ -203,6 +217,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
   async compileOneFile(file) {
     // Search for head and body tags if lazy compilation isn't supported.
     // Otherwise, the file has already been parsed in `compileOneFileLater`.
+
     if (!file.supportsLazyCompilation) {
       const sections = this.getHtmlSections(file);
 
@@ -379,7 +394,6 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     let compiledResult;
     try {
       compiledResult = this.svelte.compile(code, svelteOptions);
-
       if (map) {
         compiledResult.js.map = this.combineSourceMaps(map, compiledResult.js.map);
       }
@@ -405,12 +419,29 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       );
     }
 
+    let css;
+
+    if (svelteOptions.css === false && compiledResult.css) {
+      css = {
+        path: file.getPathInPackage(),
+        sourcePath: file.getPathInPackage(),
+        data: compiledResult.css.code,
+        sourceMap: compiledResult.css.map,
+        lazy: false
+      };
+    }
+
     try {
-      return this.transpileWithBabel(
+      const js = this.transpileWithBabel(
         compiledResult.js,
         path,
         file
       );
+
+      return {
+        js,
+        css
+      }
     } catch (e) {
       // Throw unknown errors.
       if (!e.start) {
