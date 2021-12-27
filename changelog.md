@@ -1,3 +1,11 @@
+## 1.1.0 - December 27, 2021
+
+- Fix loading typescript compiler
+- Fix using `css` option
+- Fix using post css
+- Fix using optional chaining
+- Fix HMR bugs
+
 ## 1.0.2 - April 21, 2021
 
 - Add missing `@babel/parser` dependency
