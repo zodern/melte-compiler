@@ -132,7 +132,8 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       PREPROCESS_VERSION,
       process.env.NODE_ENV === 'production',
       this.tsVersion,
-      suffix
+      suffix,
+      this.options?.css || false
     ].join('-');
 
     this.babelCompiler.setDiskCacheDirectory(this._diskCache + babelSuffix);
