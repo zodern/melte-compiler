@@ -7,7 +7,7 @@ Package.describe({
 });
 
 Npm.depends({
-  'svelte-hmr': '0.13.2',
+  'svelte-hmr': '0.14.9',
   'find-up': '3.0.0',
   htmlparser2: '3.10.1',
   'postcss': '7.0.17',

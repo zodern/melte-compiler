@@ -205,9 +205,9 @@
       "integrity": "sha512-qe1jfm1Mg7Nq/NSh6XE24gPXROEVsWHxC1LIx//XNlD9iw7YZQGjZNjYN7xGaEG6iKdA8EtNFW6R0gjnVXp+wQ=="
     },
     "svelte-hmr": {
-      "version": "0.13.2",
-      "resolved": "https://registry.npmjs.org/svelte-hmr/-/svelte-hmr-0.13.2.tgz",
-      "integrity": "sha512-abXnVyhjxrTuKKuHVLsNk8bkbk3cmbkBzfVbVDI1PeBBB/PlfzRpYwTGHGznXNRvlDAHab9GxPpAGoUFJLXBVg=="
+      "version": "0.14.9",
+      "resolved": "https://registry.npmjs.org/svelte-hmr/-/svelte-hmr-0.14.9.tgz",
+      "integrity": "sha512-bKE9+4qb4sAnA+TKHiYurUl970rjA0XmlP9TEP7K/ncyWz3m81kA4HOgmlZK/7irGK7gzZlaPDI3cmf8fp/+tg=="
     },
     "tslib": {
       "version": "2.3.1",

@@ -412,12 +412,6 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
         code,
         svelteOptions
       );
-
-      // makeHot injects a reference to `import.meta`, which Meteor does not support
-      compiledResult.js.code = compiledResult.js.code.replace(
-        'if (false) import.meta.hot.accept();',
-        ''
-      );
     }
 
     let css;
