@@ -204,6 +204,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       file.addJavaScript({
         path: file.getPathInPackage()
       }, async () => {
+       try {
         const { js, css } = await getResult();
 
         if (css) {
@@ -211,6 +212,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
         }
 
         return js;
+       } catch(e) {};
       });
     }
   }
