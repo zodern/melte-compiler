@@ -204,7 +204,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       file.addJavaScript({
         path: file.getPathInPackage()
       }, async () => {
-        const { js, css } = await getResult();
+        const { js, css } = (await getResult()) || {};
 
         if (css) {
           file.addStylesheet(css);
