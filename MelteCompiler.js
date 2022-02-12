@@ -290,7 +290,10 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
             return;
           }
 
-          let ast = parse(content, { parser: createRecastParser(attributes.lang === 'ts') });
+          let ast = parse(content, {
+            parser: createRecastParser(attributes.lang === 'ts'),
+            sourceFileName: path
+          });
 
           let modified = false;
           let uniqueIdCount = 0;
@@ -383,7 +386,9 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
           let code = content;
 
           if (modified) {
-            ({ map, code } = print(ast));
+            ({ map, code } = print(ast, {
+              sourceMapName: path,
+            }));
           }
 
           return attributes.lang === 'ts'
