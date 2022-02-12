@@ -1,6 +1,5 @@
 import htmlparser from 'htmlparser2';
 import postcss from 'postcss';
-import sourcemap from 'source-map';
 import { parse, print, types } from 'recast';
 import acorn from 'recast/parsers/acorn';
 import typescript from 'recast/parsers/typescript';
@@ -39,9 +38,22 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     });
 
     this.options = options;
-    this.babelCompiler = new BabelCompiler;
     this.preprocess = preprocess;
     this.runtimePackage = options.runtimePackage || 'zodern:melte';
+
+    this._babelOptions;
+    this.babelCompiler = new BabelCompiler;
+    let self = this;
+    // Allows us to adjust babel config in older versions of Meteor
+    // Can be removed once we drop support for versions of Meteor before 2.0
+    // since Meteor 2.0 adds a supported way to change the babel config
+    this.babelCompiler.inferExtraBabelOptions = function (file, babelOptions, cacheDeps) {
+      if (self._babelOptions) {
+        Object.assign(babelOptions, self._babelOptions);
+      }
+
+      return BabelCompiler.prototype.inferExtraBabelOptions.call(this, file, babelOptions, cacheDeps);
+    }
 
     // Don't attempt to require `svelte/compiler` during `meteor publish`.
     if (!options.isPublishing) {
@@ -139,6 +151,19 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     this.babelCompiler.setDiskCacheDirectory(this._diskCache + babelSuffix);
   }
 
+  withBabelOptions(options, cb) {
+    if (this._babelOptions) {
+      throw new Error('only one active withBabelOptions is allowed');
+    }
+
+    this._babelOptions = options;
+    try {
+      cb();
+    } finally {
+      this._babelOptions = undefined;
+    }
+  }
+
   // The compile result returned from `compileOneFile` can be an array or an
   // object. If the processed HTML file is not a Svelte component, the result is
   // an array of HTML sections (head and/or body). Otherwise, it's an object
@@ -227,7 +252,8 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       }
     }
 
-    let code = file.getContentsAsString();
+    let originalCode = file.getContentsAsString();
+    let code = originalCode;
     let map;
     const basename = file.getBasename();
     const path = file.getPathInPackage();
@@ -353,11 +379,16 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
               ));
           }
 
-          const processedCode = modified ? print(ast).code : content;
+          let map;
+          let code = content;
+
+          if (modified) {
+            ({ map, code } = print(ast));
+          }
 
           return attributes.lang === 'ts'
-            ? this.getTs()({ content: processedCode, filename: path })
-            : { code: processedCode };
+            ? this.getTs()({ content: code, filename: path })
+            : { code, map };
         },
         style: async ({ content, attributes }) => {
           if (this.postcss) {
@@ -370,6 +401,8 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
             }
           }
         }
+      }, {
+        filename: path
       })));
     } catch (e) {
       let err = { message: e.message };
@@ -386,17 +419,29 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     if (typeof this.preprocess === 'function') {
       try {
         code = await this.preprocess(code, file);
+        // TODO: allow this.preprocess to return source map
+        map = undefined;
       } catch (e) {
         file.error(e);
         return;
       }
     }
 
+    svelteOptions.sourcemap = map;
+
     let compiledResult;
     try {
       compiledResult = this.svelte.compile(code, svelteOptions);
-      if (map) {
-        compiledResult.js.map = this.combineSourceMaps(map, compiledResult.js.map);
+
+      let compiledMap = compiledResult.js.map;
+      if (compiledMap) {
+        compiledMap.sources = compiledMap.sources.map(source => {
+          return source === basename ? path : source
+        });
+
+        if (!compiledMap.sourcesContent) {
+          compiledMap.sourcesContent = [originalCode];
+        }
       }
     } catch (e) {
       file.error(e);
@@ -479,65 +524,27 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     // in production builds
     this._setBabelCacheDirectory(this.hmrAvailable(file) ? '-hmr' : '');
 
-    const {
-      data,
-      sourceMap
-    } = this.babelCompiler.processOneFileForTarget(file, source.code);
+
+    let babelResult;
+
+    if (source.map && typeof source.map !== 'object') {
+      throw new Error(`sourcemap is not an object: ${typeof source.map}`);
+    }
+
+    this.withBabelOptions({
+      inputSourceMap: source.map
+    }, () => {
+      babelResult = this.babelCompiler.processOneFileForTarget(file, source.code);
+    });
 
     return {
       sourcePath: path,
       path,
-      data,
-      sourceMap: this.combineSourceMaps(sourceMap, source.map)
+      data: babelResult.data,
+      sourceMap: babelResult.sourceMap
     };
   }
 
-  // Generates a new source map that maps a file transpiled by Babel back to the
-  // original HTML via a source map generated by the Svelte compiler.
-  combineSourceMaps(targetMap, originalMap) {
-    const result = new sourcemap.SourceMapGenerator;
-
-    const targetConsumer = new sourcemap.SourceMapConsumer(targetMap);
-    const originalConsumer = new sourcemap.SourceMapConsumer(originalMap);
-
-    targetConsumer.eachMapping(mapping => {
-      // Ignore mappings that don't have a source.
-      if (!mapping.source) {
-        return;
-      }
-
-      const position = originalConsumer.originalPositionFor({
-        line: mapping.originalLine,
-        column: mapping.originalColumn
-      });
-
-      // Ignore mappings that don't map to the original HTML.
-      if (!position.source) {
-        return;
-      }
-
-      result.addMapping({
-        source: position.source,
-        original: {
-          line: position.line,
-          column: position.column
-        },
-        generated: {
-          line: mapping.generatedLine,
-          column: mapping.generatedColumn
-        }
-      });
-    });
-
-    if (originalMap.sourcesContent && originalMap.sourcesContent.length) {
-      // Copy source content from the source map generated by the Svelte compiler.
-      // We can just take the first entry because only one file is involved in the
-      // Svelte compilation and Babel transpilation.
-      result.setSourceContent(originalMap.sources[0], originalMap.sourcesContent[0]);
-    }
-
-    return result.toJSON();
-  }
 };
 
 export default SvelteCompiler;
