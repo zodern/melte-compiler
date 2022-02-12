@@ -11,7 +11,6 @@ Npm.depends({
   'find-up': '3.0.0',
   htmlparser2: '3.10.1',
   'postcss': '7.0.17',
-  'source-map': '0.5.6',
   'recast': '0.21.0',
   'periscopic': '2.0.3',
   'acorn': '8.7.0',
