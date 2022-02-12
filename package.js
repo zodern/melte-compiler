@@ -12,10 +12,10 @@ Npm.depends({
   htmlparser2: '3.10.1',
   'postcss': '7.0.17',
   'source-map': '0.5.6',
-  'recast': '0.20.5',
-  'periscopic': '2.0.2',
-  'acorn': '8.6.0',
-  '@babel/parser': '7.4.3'
+  'recast': '0.21.0',
+  'periscopic': '2.0.3',
+  'acorn': '8.7.0',
+  '@babel/parser': '7.17.0'
 });
 
 Package.onUse(function (api) {
