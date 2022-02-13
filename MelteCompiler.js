@@ -267,8 +267,11 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
         .replace(/[^a-z0-9_$]/ig, '_') // Ensure valid identifier
     };
 
+    let transformTrackerStatements = true;
+
     // If the component was imported by server code, compile it for SSR.
     if (arch.startsWith('os.')) {
+      transformTrackerStatements = false;
       svelteOptions.generate = 'ssr';
     } else {
       const { hydratable, css } = this.options;
@@ -303,6 +306,10 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
 
           // Only look for top-level labels
           for (let i = 0; i < ast.program.body.length; i++) {
+            if (!transformTrackerStatements) {
+              break;
+            }
+
             let node = ast.program.body[i];
 
             if (node.type === 'LabeledStatement' && node.label.name === '$m') {
