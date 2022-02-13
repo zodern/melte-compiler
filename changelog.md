@@ -1,3 +1,7 @@
+## 1.2.1 - February 12, 2022
+
+- Fix compiling tracker statements for SSR
+
 ## 1.2.0 - February 12, 2022
 
 - Fix crash when file has a syntax error
