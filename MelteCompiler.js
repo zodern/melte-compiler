@@ -55,6 +55,8 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       return BabelCompiler.prototype.inferExtraBabelOptions.call(this, file, babelOptions, cacheDeps);
     }
 
+    this.sourcemapsSupported = true;
+
     // Don't attempt to require `svelte/compiler` during `meteor publish`.
     if (!options.isPublishing) {
       try {
@@ -64,6 +66,11 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
           'Cannot find the `svelte` package in your application. ' +
           'Please install it with `meteor npm install `svelte`.'
         );
+      }
+
+      const versionParts = this.svelte.VERSION.split('.').map(p => parseInt(p, 10));
+      if (versionParts[0] === 3 && versionParts[1] < 30) {
+        this.sourcemapsSupported = false;
       }
 
       this.ts = null;
@@ -439,7 +446,9 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       }
     }
 
-    svelteOptions.sourcemap = map;
+    if (this.sourcemapsSupported) {
+      svelteOptions.sourcemap = map;
+    }
 
     let compiledResult;
     try {
