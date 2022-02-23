@@ -1,3 +1,6 @@
+## 1.2.2 - February 23, 2022
+- Fix error when using old versions of Svelte 3
+
 ## 1.2.1 - February 12, 2022
 
 - Fix compiling tracker statements for SSR
