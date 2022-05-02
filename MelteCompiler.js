@@ -297,6 +297,10 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
         script: ({ content, attributes }) => {
           // Reactive statements are not supported in the module script
           if (attributes.context === 'module') {
+            if (attributes.lang === 'ts') {
+              return this.getTs()({ content, filename: path });
+            }
+
             return;
           }
 
