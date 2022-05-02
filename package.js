@@ -1,6 +1,6 @@
 Package.describe({
   name: 'zodern:melte-compiler',
-  version: '1.2.2',
+  version: '1.3.0',
   summary: 'Compiler used by zodern:melte',
   git: 'https://github.com/zodern/melte-compiler.git',
   documentation: 'README.md'

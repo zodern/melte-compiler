@@ -1,3 +1,6 @@
+## 1.3.0 - May 2, 2022
+- Support typescript in scripts with context="module"
+
 ## 1.2.2 - February 23, 2022
 - Fix error when using old versions of Svelte 3
 
