@@ -57,40 +57,17 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
 
     this.sourcemapsSupported = true;
 
-    // Don't attempt to require `svelte/compiler` during `meteor publish`.
-    if (!options.isPublishing) {
-      try {
-        this.svelte = require('svelte/compiler');
-      } catch (error) {
-        throw new Error(
-          'Cannot find the `svelte` package in your application. ' +
-          'Please install it with `meteor npm install `svelte`.'
-        );
-      }
+    // Delay loading deps until we need them to avoid issues when publishing
+    // this package, or any package that depends on zodern:melte
+    this.ts = null;
+    this.svelte = null;
+    this.makeHot = null;
 
-      const versionParts = this.svelte.VERSION.split('.').map(p => parseInt(p, 10));
-      if (versionParts[0] === 3 && versionParts[1] < 30) {
-        this.sourcemapsSupported = false;
-      }
-
-      this.ts = null;
-
-      try {
-        let tsPackage = require('typescript/package.json');
-        this.tsVersion = tsPackage.version;
-      } catch (e) {
-        this.tsVersion = '<unknown>';
-      }
-
-      this.makeHot = createMakeHot({
-        meta: 'module',
-        walk: this.svelte.walk,
-        absoluteImports: false,
-        versionNonAbsoluteImports: false,
-        hotApi: `meteor/${this.runtimePackage}/hmr-runtime.js`,
-        preserveLocalState: false,
-        adapter: `meteor/${this.runtimePackage}/proxy-adapter.js`,
-      });
+    try {
+      let tsPackage = require('typescript/package.json');
+      this.tsVersion = tsPackage.version;
+    } catch (e) {
+      this.tsVersion = '<unknown>';
     }
 
     if (options.postcss) {
@@ -105,6 +82,28 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     }
   }
 
+  getSvelte() {
+    if (this.svelte) {
+      return this.svelte;
+    }
+
+    try {
+      this.svelte = require('svelte/compiler');
+    } catch (error) {
+      throw new Error(
+        'Cannot find the `svelte` package in your application. ' +
+        'Please install it with `meteor npm install `svelte`.'
+      );
+    }
+
+    const versionParts = this.svelte.VERSION.split('.').map(p => parseInt(p, 10));
+    if (versionParts[0] === 3 && versionParts[1] < 30) {
+      this.sourcemapsSupported = false;
+    }
+
+    return this.svelte;
+  }
+
   getTs() {
     if (this.ts === null) {
       try {
@@ -116,6 +115,24 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     }
 
     return this.ts;
+  }
+
+  getMakeHot() {
+    if (this.makeHot) {
+      return this.makeHot;
+    }
+
+    this.makeHot = createMakeHot({
+      meta: 'module',
+      walk: this.getSvelte().walk,
+      absoluteImports: false,
+      versionNonAbsoluteImports: false,
+      hotApi: `meteor/${this.runtimePackage}/hmr-runtime.js`,
+      preserveLocalState: false,
+      adapter: `meteor/${this.runtimePackage}/proxy-adapter.js`,
+    });
+
+    return this.makeHot;
   }
 
   hmrAvailable(file) {
@@ -132,7 +149,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       this.hmrAvailable(file),
       process.env.NODE_ENV === 'production',
       {
-        svelteVersion: this.svelte.VERSION,
+        svelteVersion: this.getSvelte().VERSION,
         preprocessVersion: PREPROCESS_VERSION,
         tsVersion: this.tsVersion,
       },
@@ -147,7 +164,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     // Babel doesn't use the svelte or preprocessor versions in its cache keys
     // so we instead use the versions in the cache path
     const babelSuffix = [
-      (this.svelte || {}).VERSION,
+      (this.getSvelte() || {}).VERSION,
       PREPROCESS_VERSION,
       process.env.NODE_ENV === 'production',
       this.tsVersion,
@@ -293,7 +310,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     }
 
     try {
-      ({ code, map } = (await this.svelte.preprocess(code, {
+      ({ code, map } = (await this.getSvelte().preprocess(code, {
         script: ({ content, attributes }) => {
           // Reactive statements are not supported in the module script
           if (attributes.context === 'module') {
@@ -456,7 +473,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
 
     let compiledResult;
     try {
-      compiledResult = this.svelte.compile(code, svelteOptions);
+      compiledResult = this.getSvelte().compile(code, svelteOptions);
 
       let compiledMap = compiledResult.js.map;
       if (compiledMap) {
@@ -474,7 +491,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     }
 
     if (this.hmrAvailable(file)) {
-      compiledResult.js.code = this.makeHot(
+      compiledResult.js.code = this.getMakeHot()(
         path,
         compiledResult.js.code,
         {},
