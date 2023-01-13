@@ -579,6 +579,12 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       babelResult = this.babelCompiler.processOneFileForTarget(file, source.code);
     });
 
+    if (babelResult === null) {
+      // There was an error compiling with babel
+      // The BabelCompiler already reported this error to Meteor
+      return null;
+    }
+
     return {
       sourcePath: path,
       path,
