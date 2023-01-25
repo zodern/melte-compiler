@@ -426,9 +426,21 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
             }));
           }
 
-          return attributes.lang === 'ts'
-            ? this.getTs()({ content: code, filename: path })
-            : { code, map };
+          if (attributes.lang === 'ts') {
+            return this.getTs()({
+              content: code,
+              filename: path,
+              map,
+              options: {
+                compilerOptions: {
+                  preserveValueImports: true,
+                  sourceMap: true
+                }
+              }
+            });
+          }
+
+          return { code, map };
         },
         style: async ({ content, attributes }) => {
           if (this.postcss) {
