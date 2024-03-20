@@ -1,6 +1,6 @@
 Package.describe({
   name: 'zodern:melte-compiler',
-  version: '1.4.0',
+  version: '1.4.1',
   summary: 'Compiler used by zodern:melte',
   git: 'https://github.com/zodern/melte-compiler.git',
   documentation: 'README.md'
@@ -18,9 +18,9 @@ Npm.depends({
 });
 
 Package.onUse(function (api) {
-  api.versionsFrom('1.8.1');
+  api.versionsFrom(['1.8.1', '3.0-beta.6']);
   api.use('ecmascript@0.12.7');
-  api.use('caching-compiler@1.2.1', 'server');
+  api.use('caching-compiler@1.2.1||2.0.0-beta300.6', 'server');
   api.use('babel-compiler@7.3.4', 'server');
 
   api.mainModule('hmr-runtime.js', 'client', { lazy: true });
