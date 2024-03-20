@@ -1,3 +1,7 @@
+## 1.4.1 - March 20, 2023
+
+- Support Meteor 3
+
 ## 1.4.0 - January 25, 2023
 
 - Fix crash when error compiling with babel
