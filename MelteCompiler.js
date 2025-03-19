@@ -63,6 +63,8 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     this.svelte = null;
     this.makeHot = null;
 
+    this.supportsVerbatimModuleSyntax = false;
+
     try {
       let tsPackage = require('typescript/package.json');
       this.tsVersion = tsPackage.version;
@@ -104,13 +106,48 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
     return this.svelte;
   }
 
-  getTs() {
-    if (this.ts === null) {
+  async getTs() {
+    if (this.ts) {
+      return this.ts;
+    }
+
+    try {
+      this.ts = require('svelte-preprocess/dist/transformers/typescript').transformer;
+    } catch (e) {
+      console.log('Melte: Unable to load svelte-preprocess. Please make sure the svelte-preprocess and typescript npm packages are installed.');
+      throw new Error('Unable to load dependencies to compile typescript');
+    }
+
+    if (this.ts) {
+      // check if it typescript supports verbatimModuleSyntax
+      // This would be easy if we could get the app's typescript version, but
+      // it seems we can only get the package's typescript version
+
+      let oldLog = console.log;
+      let oldWarn = console.warn;
       try {
-        this.ts = require('svelte-preprocess/dist/transformers/typescript').transformer;
-      } catch (e) {
-        console.log('Melte: Unable to load svelte-preprocess. Please make sure the svelte-preprocess and typescript npm packages are installed.');
-        throw new Error('Unable to load dependencies to compile typescript');
+        // Typescript and svelte-preprocessor both log messages when
+        // preserveValueImports is deprecated
+        console.log = () => {};
+        console.warn = () => {};
+        await this.ts({
+          content: '',
+          filename: '',
+          options: {
+            compilerOptions: {
+              preserveValueImports: true
+            }
+          }
+        });
+      } catch (err) {
+        console.log = oldLog;
+        // If it can't compile with preserveValueImports, it probably needs
+        // the new option
+        // We should check the error message, but it uses a generic error
+        this.supportsVerbatimModuleSyntax = true;
+      } finally {
+        console.warn = oldWarn;
+        console.log = oldLog;
       }
     }
 
@@ -311,11 +348,11 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
 
     try {
       ({ code, map } = (await this.getSvelte().preprocess(code, {
-        script: ({ content, attributes }) => {
+        script: async ({ content, attributes }) => {
           // Reactive statements are not supported in the module script
           if (attributes.context === 'module') {
             if (attributes.lang === 'ts') {
-              return this.getTs()({ content, filename: path });
+              return (await this.getTs())({ content, filename: path });
             }
 
             return;
@@ -427,15 +464,21 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
           }
 
           if (attributes.lang === 'ts') {
-            return this.getTs()({
+            let ts = await this.getTs();
+            let compilerOptions = { sourceMap: true };
+
+            if (this.supportsVerbatimModuleSyntax) {
+              compilerOptions.verbatimModuleSyntax = true;
+            } else {
+              compilerOptions.preserveValueImports = true;
+            }
+
+            return ts({
               content: code,
               filename: path,
               map,
               options: {
-                compilerOptions: {
-                  preserveValueImports: true,
-                  sourceMap: true
-                }
+                compilerOptions
               }
             });
           }
