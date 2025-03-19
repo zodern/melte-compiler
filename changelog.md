@@ -1,4 +1,4 @@
-## 1.4.2 - March 19, 2025
+## 1.4.2, 1.4.3 - March 19, 2025
 
 - Support Typescript 5
 
