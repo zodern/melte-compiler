@@ -1,3 +1,7 @@
+## 1.4.2 - March 19, 2025
+
+- Support Typescript 5
+
 ## 1.4.1 - March 20, 2023
 
 - Support Meteor 3
