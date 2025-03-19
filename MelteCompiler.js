@@ -562,7 +562,7 @@ SvelteCompiler = class SvelteCompiler extends CachingCompiler {
       css = {
         path: file.getPathInPackage(),
         sourcePath: file.getPathInPackage(),
-        data: compiledResult.css.code,
+        data: compiledResult.css.code || '',
         sourceMap: compiledResult.css.map,
         lazy: false
       };
